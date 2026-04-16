@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>NPP Monitoring - Single View</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Monitoring Transaksi NPP</h1>
+        
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Ketik nama Apotek/RS...">
+            <button onclick="cariPelanggan()">Cari Data</button>
+        </div>
+
+        <div id="singleView" class="view-container" style="display:none;">
+            <div class="profile-card">
+                <h2 id="viewNama">Nama Apotek</h2>
+                <div class="status-badge" id="viewStatus">Status Izin: Aktif</div>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Nama APJ:</label>
+                        <span id="viewApj">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Nomor SIA:</label>
+                        <span id="viewNoSia">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Masa Berlaku SIA:</label>
+                        <span id="viewTglIzin">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Limit Bulanan:</label>
+                        <span id="viewLimit">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Pemakaian Bulan Ini:</label>
+                        <span id="viewPemakaian">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Histori Transaksi Terakhir</h3>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Produk</th>
+                        <th>Jumlah</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="data_pelanggan.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

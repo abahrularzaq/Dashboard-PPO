@@ -1,0 +1,79 @@
+/* Container Utama agar bisa di-scroll ke samping */
+.wrapper {
+    padding: 50px;
+    text-align: center;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+.tree {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.tree ul {
+    padding-top: 20px; 
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-left: 0;
+}
+
+.tree li {
+    list-style-type: none;
+    position: relative;
+    padding: 20px 5px 0 5px;
+    transition: all 0.5s;
+}
+
+/* Garis Horizontal penghubung */
+.tree li::before, .tree li::after {
+    content: '';
+    position: absolute; top: 0; right: 50%;
+    border-top: 2px solid #888;
+    width: 50%; height: 20px;
+}
+.tree li::after {
+    right: auto; left: 50%;
+    border-left: 2px solid #888;
+}
+
+/* Garis Vertikal dari Orang Tua */
+.tree ul ul::before {
+    content: '';
+    position: absolute; top: 0; left: 50%;
+    border-left: 2px solid #888;
+    width: 0; height: 20px;
+}
+
+.tree li:only-child::after, .tree li:only-child::before { display: none; }
+.tree li:only-child { padding-top: 0; }
+.tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+.tree li:last-child::before { border-right: 2px solid #888; border-radius: 0 5px 0 0; }
+.tree li:first-child::after { border-radius: 5px 0 0 0; }
+
+/* Desain Kotak Nama */
+.tree li .node {
+    border: 2px solid #888;
+    padding: 10px 15px;
+    text-decoration: none;
+    color: #333;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    display: inline-block;
+    border-radius: 5px;
+    background-color: #fff;
+    transition: all 0.3s;
+}
+
+.tree li .node:hover {
+    background: #d4edda;
+    border-color: #28a745;
+    transform: translateY(-5px);
+}
+
+/* Warna berbeda tiap generasi */
+.gen-0 { background-color: #ffeb3b !important; font-weight: bold; }
+.gen-1 { background-color: #bbdefb !important; }
+.gen-2 { background-color: #c8e6c9 !important; }
+.gen-3 { background-color: #f5f5f5 !important; }

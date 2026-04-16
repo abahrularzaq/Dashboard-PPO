@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring Transaksi Obat</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <link rel="stylesheet" href="style.css">
@@ -13,55 +13,62 @@
 <body>
     <div class="container">
         <header>
-            <h1>Dashboard Monitoring Transaksi 2025</h1>
-            <p>Prekursor, Psikotropika, & Obat Tertentu</p>
+            <h1>Dashboard Monitoring PBF 2026</h1>
+            <p>Pemantauan Real-time Prekursor, Psikotropika, & OOT</p>
         </header>
 
         <main>
-            <section class="summary-cards">
-                <div class="card">
-                    <h3>Total Transaksi</h3>
-                    <p id="total-transaksi">0</p>
+            <section class="upload-section card">
+                <h3>Input Data Transaksi</h3>
+                <div class="upload-controls">
+    <label for="upload-excel">📁 Pilih File Excel</label>
+    <input type="file" id="upload-excel" accept=".xlsx, .xls">
+    
+    <button id="btn-proses">🚀 Proses Data Sekarang</button>
+</div>
                 </div>
-                <div class="card">
+                <p><small>*Pilih file Excel laporan distribusi Anda</small></p>
+            </section>
+
+            <section class="dashboard-cards">
+                <div class="card card-stats">
+                    <h3>Total Transaksi</h3>
+                    <p id="total-transaksi" class="stat-value">0</p>
+                </div>
+                <div class="card card-stats">
                     <h3>Total Volume</h3>
-                    <p id="total-volume">0</p>
+                    <p id="total-volume" class="stat-value">0</p>
+                </div>
+                <div class="card card-stats">
+                    <h3>Kategori Terdeteksi</h3>
+                    <p id="total-kategori" class="stat-value">0</p>
                 </div>
             </section>
 
-            <div class="card">
-    <h3>Kategori Terdeteksi</h3>
-    <p id="total-kategori">0</p>
-</div>
-
-            <section class="charts">
+            <section class="charts card">
+                <h3>Grafik Distribusi Produk</h3>
                 <canvas id="transaksiChart"></canvas>
             </section>
 
-            <section class="data-table">
+            <section class="data-table card">
                 <h3>Rekap Data Per Produk</h3>
-                <table id="table-rekap">
-                    <thead>
-                        <tr>
-                            <th>Nama Produk</th>
-                            <th>Total Order</th>
-                            <th>Frekuensi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
+                <div class="table-container">
+                    <table id="table-rekap">
+                        <thead>
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th>Total Order (Qty)</th>
+                                <th>Frekuensi Transaksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
             </section>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.min.js"></script>
-
-<section class="upload-section">
-    <input type="file" id="upload-excel" accept=".xlsx, .xls">
-    <button id="btn-proses" style="padding: 5px 15px; cursor: pointer;">Proses Data</button>
-    <p>Pilih file lalu klik tombol "Proses Data".</p>
-</section>
-
         </main>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>

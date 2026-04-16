@@ -125,7 +125,10 @@ header p {
 
 /* 5. Grafik */
 .charts {
-    min-height: 300px;
+    max-width: 900px; /* Lebih lebar untuk Bar Chart */
+    margin: 0 auto 25px auto;
+    height: 450px;    /* Beri ruang cukup untuk batang-batang grafiknya */
+    position: relative;
 }
 
 /* 6. Tabel Rekap */
@@ -157,4 +160,22 @@ tr:nth-child(even) {
 
 tr:hover {
     background-color: #f1faff;
+}
+.filter-section {
+    margin-bottom: 15px;
+}
+
+#input-cari {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Agar padding tidak merusak lebar */
+}
+
+#input-cari:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
 }

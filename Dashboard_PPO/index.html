@@ -21,12 +21,10 @@
             <section class="upload-section card">
                 <h3>Input Data Transaksi</h3>
                 <div class="upload-controls">
-    <label for="upload-excel">📁 Pilih File Excel</label>
-    <input type="file" id="upload-excel" accept=".xlsx, .xls">
-    
-    <button id="btn-proses">🚀 Proses Data Sekarang</button>
-</div>
-                </div>
+                    <label for="upload-excel">📁 Pilih File Excel</label>
+                  <input type="file" id="upload-excel" accept=".xlsx, .xls">
+                 <button id="btn-proses">🚀 Proses Data Sekarang</button>
+            </div>
                 <p><small>*Pilih file Excel laporan distribusi Anda</small></p>
             </section>
 
@@ -51,14 +49,18 @@
             </section>
 
             <section class="data-table card">
-                <h3>Rekap Data Per Produk</h3>
+                <h3>Rekap Data Per Customer</h3>
+                <div class="filter-section">
+        <input type="text" id="input-cari" placeholder="🔍 Cari nama customer...">
+    </div>
                 <div class="table-container">
                     <table id="table-rekap">
                         <thead>
                             <tr>
-                                <th>Nama Produk</th>
-                                <th>Total Order (Qty)</th>
-                                <th>Frekuensi Transaksi</th>
+                                <th>Nama Customer</th>
+                                 <th>Nama Produk</th>
+                                 <th>Tgl Transaksi</th>
+                                  <th>Jumlah Orderan</th>
                             </tr>
                         </thead>
                         <tbody>

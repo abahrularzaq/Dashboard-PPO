@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Transaksi Obat</title>
+    <title>Monitoring Transaksi Obat - PBF Dashboard</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,20 +19,25 @@
             <h1>Dashboard Monitoring PBF 2026</h1>
             <p>Pemantauan Real-time Prekursor, Psikotropika, & OOT</p>
         </header>
-        <p style="color: #666; font-size: 0.9em; text-align: center;">
-    🔒 <strong>Keamanan Data:</strong> File Excel yang diupload hanya diproses di browser Anda. 
-    Tidak ada data yang disimpan atau dikirim ke server mana pun.
-</p>
+
+        <section class="privacy-note card">
+            <p>🔒 <strong>Keamanan Data:</strong> File Excel diproses secara lokal di browser Anda. Tidak ada data yang dikirim ke server mana pun.</p>
+        </section>
 
         <main>
             <section class="upload-section card">
                 <h3>Input Data Transaksi</h3>
                 <div class="upload-controls">
-                    <label for="upload-excel">📁 Pilih File Excel</label>
-                  <input type="file" id="upload-excel" accept=".xlsx, .xls">
-                 <button id="btn-proses">🚀 Proses Data Sekarang</button>
-            </div>
-                <p><small>*Pilih file Excel laporan distribusi Anda</small></p>
+                    <label for="upload-excel" class="btn-upload">📁 Pilih File Excel</label>
+                    <input type="file" id="upload-excel" accept=".xlsx, .xls" style="display: none;">
+                    <button id="btn-proses">🚀 Proses Data Sekarang</button>
+                </div>
+                <p><small id="file-name">*Belum ada file yang dipilih</small></p>
+                
+                <div class="export-controls" style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button id="btn-export-excel" style="background:#27ae60; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">📥 Export Excel</button>
+                    <button id="btn-export-pdf" style="background:#e74c3c; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">📋 Export PDF</button>
+                </div>
             </section>
 
             <section class="dashboard-cards">
@@ -49,22 +57,36 @@
 
             <section class="charts card">
                 <h3>Grafik Distribusi Produk</h3>
-                <canvas id="transaksiChart"></canvas>
+                <div class="chart-container">
+                    <canvas id="transaksiChart"></canvas>
+                </div>
             </section>
 
             <section class="data-table card">
                 <h3>Rekap Data Per Customer</h3>
-                <div class="filter-section">
-        <input type="text" id="input-cari" placeholder="🔍 Cari nama customer...">
-    </div>
+
+                <div class="filter-area">
+                    <div class="search-box">
+                        <label>Cari Customer:</label>
+                        <input type="text" id="input-cari" placeholder="Masukkan nama apotek/outlet...">
+                    </div>
+                    
+                    <div class="filter-box">
+                        <label>Filter Produk:</label>
+                        <select id="filter-produk">
+                            <option value="">-- Semua Produk --</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table id="table-rekap">
                         <thead>
                             <tr>
                                 <th>Nama Customer</th>
-                                 <th>Nama Produk</th>
-                                 <th>Tgl Transaksi</th>
-                                  <th>Jumlah Orderan</th>
+                                <th>Jenis Produk</th>
+                                <th>Status/Keterangan</th>
+                                <th style="text-align:right;">Total Volume</th>
                             </tr>
                         </thead>
                         <tbody>

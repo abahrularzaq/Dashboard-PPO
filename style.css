@@ -194,3 +194,121 @@ span[title] {
     .upload-controls { flex-direction: column; }
     #btn-proses, .btn-upload { width: 100%; }
 }
+/* Container Utama Chat */
+.ai-chat-widget {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 0 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Header Chat */
+.chat-header {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-avatar {
+    width: 40px;
+    height: 40px;
+    background: #34495e;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.ai-info strong { display: block; font-size: 0.9em; }
+.ai-info span { font-size: 0.7em; color: #2ecc71; }
+
+/* Body Chat */
+.chat-body {
+    height: 300px;
+    overflow-y: auto;
+    background: #e5ddd5; /* Warna background khas WA */
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Balon Chat */
+.message {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    position: relative;
+}
+
+.bot-msg {
+    align-self: flex-start;
+    background: white;
+    color: #333;
+    border-bottom-left-radius: 2px;
+}
+
+.user-msg {
+    align-self: flex-end;
+    background: #dcf8c6;
+    color: #333;
+    border-bottom-right-radius: 2px;
+}
+/* Container Chat Melayang */
+.ai-chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px; /* Ukuran lebih ramping agar tidak tutupi tabel */
+    max-height: 450px;
+    z-index: 9999; /* Supaya selalu di atas tabel */
+    display: none; /* Kita sembunyikan dulu, muncul saat diklik */
+    flex-direction: column;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border: 1px solid #ddd;
+}
+
+/* Tombol Pemicu (Trigger Button) */
+.chat-trigger {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #2c3e50;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 10000;
+    transition: 0.3s;
+}
+
+.chat-trigger:hover { transform: scale(1.1); background: #34495e; }
+
+/* Tambahkan tombol tutup di header chat */
+.chat-header {
+    justify-content: space-between;
+}
+
+.close-chat {
+    cursor: pointer;
+    font-size: 20px;
+    opacity: 0.8;
+}

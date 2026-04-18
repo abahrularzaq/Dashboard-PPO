@@ -97,6 +97,29 @@
         </main>
     </div>
 
+    <div class="chat-trigger" onclick="toggleChat()" id="chat-icon">🤖</div>
+
+<section class="ai-chat-widget" id="ai-widget">
+    <div class="chat-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-info">
+                <strong>Asisten APJ</strong>
+                <span>Online</span>
+            </div>
+        </div>
+        <div class="close-chat" onclick="toggleChat()">×</div>
+    </div>
+    
+    <div id="chat-history" class="chat-body">
+        <div class="message bot-msg">Ada yang bisa saya bantu analisa dari data ini, Pak?</div>
+    </div>
+
+    <div class="chat-footer">
+        <input type="text" id="user-input" placeholder="Tanya sesuatu...">
+        <button onclick="tanyaAI()" id="btn-send-ai">🚀</button>
+    </div>
+</section>
     <script src="script.js"></script>
 </body>
 </html>

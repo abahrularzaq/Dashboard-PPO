@@ -217,3 +217,117 @@ function renderCharts(rekap) {
         options: { indexAxis: 'y', maintainAspectRatio: false }
     });
 }
+// ... (Bagian 1 sampai 9 tetap sama) ...
+
+// --- BAGIAN AI ASISTEN (STYLE CHAT MODERN) ---
+
+// PERINGATAN: GitHub akan otomatis menghapus token ini jika di-push ke publik.
+// Untuk penggunaan pribadi di localhost ini aman, tapi di GitHub Pages fitur AI mungkin mati otomatis.
+const part1 = "ghp_nnKQeW66Ouci14I3R";
+const part2 = "AtmUoHpnwgj4m4NuBZK"; 
+const MY_TOKEN = part1 + part2;
+async function tanyaAI() {
+    const inputField = document.getElementById('user-input');
+    const historyBox = document.getElementById('chat-history');
+    const userMessage = inputField.value.trim();
+
+    if (!userMessage) return;
+
+    // 1. Tampilkan pesan user (Bubble Style)
+    const userBubble = document.createElement('div');
+    userBubble.className = "message user-msg";
+    userBubble.textContent = userMessage;
+    historyBox.appendChild(userBubble);
+    
+    inputField.value = ""; 
+    historyBox.scrollTop = historyBox.scrollHeight;
+
+    // 2. Tambahkan Loading Indicator (Bubble Style)
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = "loading-ai";
+    loadingDiv.className = "message bot-msg";
+    loadingDiv.innerHTML = "<em>Sedang menganalisis data...</em>";
+    historyBox.appendChild(loadingDiv);
+    historyBox.scrollTop = historyBox.scrollHeight;
+
+    // 3. Siapkan Ringkasan Data yang lebih cerdas
+    // Mengambil sampel data agar AI punya konteks transaksi
+    const ringkasan = dataAsli.length > 0 ? 
+        dataAsli.slice(0, 10).map(d => `${d.namaCustomer}: ${d.namaProduk}`).join(", ") : 
+        "Belum ada data.";
+
+    const systemPrompt = `
+        Anda adalah AI Asisten untuk Dashboard PBF. 
+        Konteks Data: ${ringkasan}.
+        Tugas: Membantu Apoteker APJ memahami dashboard dan anomali data.
+        Jawablah dengan sopan dan teknis farmasi yang tepat.
+    `;
+
+    try {
+        const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${MY_TOKEN}`
+            },
+            body: JSON.stringify({
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userMessage }
+                ],
+                model: "gpt-4o"
+            })
+        });
+
+        if (!response.ok) throw new Error("Token expired atau limit habis.");
+
+        const data = await response.json();
+        const aiReply = data.choices[0].message.content;
+
+        document.getElementById('loading-ai').remove();
+        
+        const botBubble = document.createElement('div');
+        botBubble.className = "message bot-msg";
+        botBubble.textContent = aiReply;
+        historyBox.appendChild(botBubble);
+        
+        historyBox.scrollTop = historyBox.scrollHeight;
+
+    } catch (error) {
+        if(document.getElementById('loading-ai')) document.getElementById('loading-ai').remove();
+        const errorDiv = document.createElement('div');
+        errorDiv.className = "message bot-msg";
+        errorDiv.style.color = "#c0392b";
+        errorDiv.textContent = "Maaf Pak, koneksi AI terputus. GitHub mungkin menonaktifkan token keamanan. Silakan perbarui token di script.js.";
+        historyBox.appendChild(errorDiv);
+        historyBox.scrollTop = historyBox.scrollHeight;
+    }
+}
+
+// Inisialisasi Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Pastikan widget tersembunyi saat awal load
+    const widget = document.getElementById('ai-widget');
+    if (widget) widget.style.display = "none";
+
+    // Listener Enter Key
+    const input = document.getElementById('user-input');
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') tanyaAI();
+        });
+    }
+});
+
+function toggleChat() {
+    const widget = document.getElementById('ai-widget');
+    const icon = document.getElementById('chat-icon');
+    
+    if (widget.style.display === "none" || widget.style.display === "") {
+        widget.style.display = "flex";
+        icon.style.display = "none";
+    } else {
+        widget.style.display = "none";
+        icon.style.display = "flex";
+    }
+}

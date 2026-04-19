@@ -312,3 +312,24 @@ span[title] {
     font-size: 20px;
     opacity: 0.8;
 }
+.btn-template {
+    background-color: #1D6F42; /* Hijau Excel */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.3s;
+}
+
+.btn-template:hover {
+    background-color: #155231;
+}
+
+.btn-template i {
+    font-size: 1.2em;
+}

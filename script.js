@@ -10,6 +10,17 @@ document.getElementById('upload-excel').addEventListener('change', function(e) {
     const fileName = selectedFile ? selectedFile.name : "*Belum ada file dipilih";
     document.getElementById('file-name').textContent = "File: " + fileName;
 });
+document.getElementById('downloadTemplate').addEventListener('click', function() {
+    // Pastikan nama file sesuai dengan yang Bapak upload ke GitHub
+    const fileUrl = 'Template_data_transaksi_excel.xlsx'; 
+    
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = 'Template_data_transaksi_excel.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
 
 // 3. Tombol Proses Data
 document.getElementById('btn-proses').addEventListener('click', function() {

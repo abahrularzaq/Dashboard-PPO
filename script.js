@@ -232,17 +232,29 @@ function renderCharts(rekap) {
 
 // --- BAGIAN AI ASISTEN (STYLE CHAT MODERN) ---
 
-// PERINGATAN: GitHub akan otomatis menghapus token ini jika di-push ke publik.
-// Untuk penggunaan pribadi di localhost ini aman, tapi di GitHub Pages fitur AI mungkin mati otomatis.
-const part1 = "ghp_nnKQeW66Ouci14I3R";
-const part2 = "AtmUoHpnwgj4m4NuBZK"; 
-const MY_TOKEN = part1 + part2;
+// HAPUS bagian part1, part2, dan MY_TOKEN yang lama.
+// Kita ganti dengan fungsi untuk mengambil token secara dinamis.
+
 async function tanyaAI() {
     const inputField = document.getElementById('user-input');
     const historyBox = document.getElementById('chat-history');
     const userMessage = inputField.value.trim();
 
     if (!userMessage) return;
+
+    // --- LOGIKA TOKEN AMAN ---
+    let activeToken = localStorage.getItem('pbf_dashboard_token');
+
+    if (!activeToken) {
+        activeToken = prompt("Keamanan: Masukkan GitHub Token Anda untuk mengaktifkan AI (Hanya perlu sekali per perangkat):");
+        if (activeToken && activeToken.startsWith('ghp_')) {
+            localStorage.setItem('pbf_dashboard_token', activeToken);
+        } else {
+            alert("Token tidak valid. Pastikan diawali dengan 'ghp_'.");
+            return;
+        }
+    }
+    // -------------------------
 
     // 1. Tampilkan pesan user (Bubble Style)
     const userBubble = document.createElement('div');
@@ -253,7 +265,7 @@ async function tanyaAI() {
     inputField.value = ""; 
     historyBox.scrollTop = historyBox.scrollHeight;
 
-    // 2. Tambahkan Loading Indicator (Bubble Style)
+    // 2. Tambahkan Loading Indicator
     const loadingDiv = document.createElement('div');
     loadingDiv.id = "loading-ai";
     loadingDiv.className = "message bot-msg";
@@ -261,8 +273,7 @@ async function tanyaAI() {
     historyBox.appendChild(loadingDiv);
     historyBox.scrollTop = historyBox.scrollHeight;
 
-    // 3. Siapkan Ringkasan Data yang lebih cerdas
-    // Mengambil sampel data agar AI punya konteks transaksi
+    // 3. Siapkan Ringkasan Data
     const ringkasan = dataAsli.length > 0 ? 
         dataAsli.slice(0, 10).map(d => `${d.namaCustomer}: ${d.namaProduk}`).join(", ") : 
         "Belum ada data.";
@@ -279,7 +290,7 @@ async function tanyaAI() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${MY_TOKEN}`
+                "Authorization": `Bearer ${activeToken}` // Menggunakan token dari localStorage
             },
             body: JSON.stringify({
                 messages: [
@@ -290,7 +301,13 @@ async function tanyaAI() {
             })
         });
 
-        if (!response.ok) throw new Error("Token expired atau limit habis.");
+        // Jika token salah atau sudah dihapus oleh GitHub (401)
+        if (response.status === 401) {
+            localStorage.removeItem('pbf_dashboard_token'); // Hapus token rusak dari memori
+            throw new Error("Token tidak valid atau telah kedaluwarsa.");
+        }
+
+        if (!response.ok) throw new Error("Gagal menghubungi AI.");
 
         const data = await response.json();
         const aiReply = data.choices[0].message.content;
@@ -309,7 +326,7 @@ async function tanyaAI() {
         const errorDiv = document.createElement('div');
         errorDiv.className = "message bot-msg";
         errorDiv.style.color = "#c0392b";
-        errorDiv.textContent = "Maaf Pak, koneksi AI terputus. GitHub mungkin menonaktifkan token keamanan. Silakan perbarui token di script.js.";
+        errorDiv.textContent = `Error: ${error.message}. Silakan refresh halaman untuk mencoba lagi atau masukkan token baru.`;
         historyBox.appendChild(errorDiv);
         historyBox.scrollTop = historyBox.scrollHeight;
     }
@@ -317,11 +334,9 @@ async function tanyaAI() {
 
 // Inisialisasi Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Pastikan widget tersembunyi saat awal load
     const widget = document.getElementById('ai-widget');
     if (widget) widget.style.display = "none";
 
-    // Listener Enter Key
     const input = document.getElementById('user-input');
     if (input) {
         input.addEventListener('keypress', (e) => {

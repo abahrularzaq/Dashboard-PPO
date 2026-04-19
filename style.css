@@ -333,3 +333,11 @@ span[title] {
 .btn-template i {
     font-size: 1.2em;
 }
+.bot-msg {
+    white-space: pre-line; /* Agar baris baru/enter dari AI terbaca */
+    line-height: 1.5;
+}
+.bot-msg b, .bot-msg strong {
+    color: #2c3e50;
+    font-weight: bold;
+}

@@ -232,15 +232,21 @@ function renderCharts(rekap) {
 
 // --- BAGIAN AI ASISTEN (STYLE CHAT MODERN) ---
 
-// HAPUS bagian part1, part2, dan MY_TOKEN yang lama.
-// Kita ganti dengan fungsi untuk mengambil token secara dinamis.
-
 async function tanyaAI() {
     const inputField = document.getElementById('user-input');
     const historyBox = document.getElementById('chat-history');
     const userMessage = inputField.value.trim();
 
     if (!userMessage) return;
+
+    // Mengirimkan data yang sudah difilter/diidentifikasi sebagai lonjakan
+const dataAnomali = dataAsli
+    .filter(d => d.statusLonjakan === "⚠️ Lonjakan") // Mengambil baris yang sudah ditandai sistem kita
+    .slice(0, 5); // Ambil 5 teratas agar tidak kepanjangan
+
+const ringkasanAnomali = dataAnomali.length > 0 ? 
+    dataAnomali.map(d => `${d.namaCustomer} beli ${d.namaProduk} sebanyak ${d.qty}`).join("; ") : 
+    "Tidak ada lonjakan signifikan terdeteksi.";
 
     // --- LOGIKA TOKEN AMAN ---
     let activeToken = localStorage.getItem('pbf_dashboard_token');
@@ -254,7 +260,6 @@ async function tanyaAI() {
             return;
         }
     }
-    // -------------------------
 
     // 1. Tampilkan pesan user (Bubble Style)
     const userBubble = document.createElement('div');
@@ -278,12 +283,37 @@ async function tanyaAI() {
         dataAsli.slice(0, 10).map(d => `${d.namaCustomer}: ${d.namaProduk}`).join(", ") : 
         "Belum ada data.";
 
-    const systemPrompt = `
-        Anda adalah AI Asisten untuk Dashboard PBF. 
-        Konteks Data: ${ringkasan}.
-        Tugas: Membantu Apoteker APJ memahami dashboard dan anomali data.
-        Jawablah dengan sopan dan teknis farmasi yang tepat.
-    `;
+     // Hitung statistik ringkas sebelum panggil AI
+const totalTransaksi = dataAsli.length;
+const totalQty = dataAsli.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+const topCustomer = dataAsli.length > 0 ? dataAsli[0].namaCustomer : "-";
+
+const systemPrompt = `
+    Anda adalah "PBF Expert Assistant". Tugas Anda membantu Apoteker Penanggung Jawab (APJ) menganalisis data distribusi farmasi.
+    
+     LOGIKA ANALISIS ANOMALI:
+    1. Deteksi Lonjakan: Jika ada satu pelanggan membeli produk > 2x lipat dari rata-rata kuantitas biasanya, tandai sebagai "Potensi Penyimpangan".
+    2. Konsentrasi Pelanggan: Jika > 50% volume satu jenis obat hanya diserap oleh 1 pelanggan, berikan peringatan risiko ketergantungan distribusi.
+    3. Fokus Pengawasan: Berikan perhatian khusus pada nama produk yang mengandung kata kunci (e.g., "Pseudoephedrine", "Dextro", "Diazepam", "Tramadol").
+    4. Jika menemukan data anomali, sampaikan dengan format: 
+       - ⚠️ TEMUAN: [Nama Pelanggan] - [Produk]
+       - Analisis: [Kenapa ini aneh?]
+       - Rekomendasi APJ: [Tindakan yang harus diambil sesuai CDOB]
+
+    KONTEKS DASHBOARD SAAT INI:
+    - Total Baris Data: ${totalTransaksi}
+    - Total Volume (Qty): ${totalQty}
+    - Customer Teratas: ${topCustomer}
+    - Sampel Data (10 teratas): ${ringkasan}
+
+    ATURAN KETAT:
+    1. HANYA jawab pertanyaan terkait data PBF, regulasi farmasi (CDOB), atau cara pakai dashboard ini.
+    2. Jika user bertanya di luar konteks (misal: masak, politik, hiburan), jawab: "Maaf Pak, saya fokus membantu Bapak mengawasi distribusi di PBF ini."
+    3. Analisis Anomali: Jika ada lonjakan Qty yang tidak wajar, beri peringatan berdasarkan data.
+    4. Gunakan istilah teknis seperti: APJ, PBF, CDOB, Prekursor, Psikotropika, dan Surat Pesanan (SP).
+    [Di akhir setiap jawaban, berikan 1 saran pertanyaan singkat yang relevan untuk dianalisis selanjutnya]
+
+`;
 
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {

@@ -148,7 +148,7 @@ st.markdown(
 
 # --- 2. FUNGSI LOGIKA (Optimasi dengan Cache agar Cepat) ---
 
-@st.cache_data
+@st.cache_data(show_spinner=False, max_entries=5)
 def siapkan_data(df):
     """Fungsi ini hanya dijalankan ulang jika file Excel berubah"""
     # Normalisasi nama kolom
@@ -170,12 +170,46 @@ def siapkan_data(df):
         df['tanggal'] = pd.to_datetime(df['tanggal'], errors='coerce', dayfirst=True)
         df['periode_bulan'] = df['tanggal'].dt.to_period('M').astype(str)
         
-    return df
+    return optimasi_memori_df(df)
 
-@st.cache_data
+@st.cache_data(show_spinner=False, max_entries=5)
 def baca_excel(file_bytes):
     """Baca file upload dari bytes agar bisa di-cache dan lebih cepat saat rerun."""
     return pd.read_excel(BytesIO(file_bytes))
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def optimasi_memori_df(df):
+    """Kompresi tipe data untuk menekan penggunaan memori pada data besar."""
+    df = df.copy()
+    for col in df.select_dtypes(include=['float64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='float')
+    for col in df.select_dtypes(include=['int64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='integer')
+
+    for col in df.select_dtypes(include=['object']).columns:
+        rasio_unik = df[col].nunique(dropna=False) / max(len(df[col]), 1)
+        if rasio_unik < 0.5:
+            df[col] = df[col].astype('category')
+    return df
+
+@st.cache_data(show_spinner=False, max_entries=16)
+def terapkan_filter(df, start_date, end_date, pilihan_customer, pilihan_produk):
+    """Filter data ter-cache agar rerun interaktif tetap ringan."""
+    df_filtered = df
+    if start_date and end_date:
+        mask_tanggal = (df_filtered['tanggal'].dt.date >= start_date) & (df_filtered['tanggal'].dt.date <= end_date)
+        df_filtered = df_filtered.loc[mask_tanggal]
+    if pilihan_customer:
+        df_filtered = df_filtered.loc[df_filtered['customer'].isin(pilihan_customer)]
+    if pilihan_produk:
+        df_filtered = df_filtered.loc[df_filtered['produk'].isin(pilihan_produk)]
+    return df_filtered
+
+@st.cache_data(show_spinner=False, max_entries=16)
+def ambil_opsi_filter(df):
+    opsi_customer = sorted(df['customer'].dropna().astype(str).unique().tolist())
+    opsi_produk = sorted(df['produk'].dropna().astype(str).unique().tolist())
+    return opsi_customer, opsi_produk
 
 def cek_lonjakan(df_cust, faktor_warning=1.0):
     """Deteksi lonjakan jika bulan terbaru > rata-rata 3 bulan sebelumnya."""
@@ -212,7 +246,7 @@ def cek_lonjakan(df_cust, faktor_warning=1.0):
                 
     return status_warning, produk_melonjak
 
-@st.cache_data
+@st.cache_data(show_spinner=False, max_entries=16)
 def hitung_early_warning(df_input, faktor_warning):
     """Hitung early warning secara vectorized agar lebih cepat untuk data besar."""
     if df_input.empty or 'tanggal' not in df_input.columns:
@@ -249,7 +283,7 @@ def hitung_early_warning(df_input, faktor_warning):
     )
     return warn[['customer', 'produk', 'periode', 'qty_sekarang', 'rata_3_bulan', 'kenaikan_persen']]
 
-@st.cache_data
+@st.cache_data(show_spinner=False, max_entries=8)
 def export_excel_bytes(df_export):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -257,7 +291,7 @@ def export_excel_bytes(df_export):
     output.seek(0)
     return output.getvalue()
 
-@st.cache_data
+@st.cache_data(show_spinner=False, max_entries=8)
 def export_pdf_bytes(df_export):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -472,29 +506,27 @@ if uploaded_file:
         min_value=min_tgl.date(),
         max_value=max_tgl.date()
     )
+    start_date, end_date = min_tgl.date(), max_tgl.date()
     if isinstance(periode_pilih, tuple) and len(periode_pilih) == 2:
         start_date, end_date = periode_pilih
-        df = df[(df['tanggal'].dt.date >= start_date) & (df['tanggal'].dt.date <= end_date)]
 
     # Filter tambahan untuk pencarian spesifik
     st.markdown('<div class="section-chip">🎯 Fokus Analisa</div>', unsafe_allow_html=True)
     st.subheader("Filter Data")
+    opsi_customer, opsi_produk = ambil_opsi_filter(df)
     col_filter_1, col_filter_2 = st.columns(2)
     with col_filter_1:
         pilihan_customer = st.multiselect(
             "Filter Customer",
-            options=sorted(df['customer'].dropna().unique().tolist())
+            options=opsi_customer
         )
     with col_filter_2:
         pilihan_produk = st.multiselect(
             "Filter Produk",
-            options=sorted(df['produk'].dropna().unique().tolist())
+            options=opsi_produk
         )
 
-    if pilihan_customer:
-        df = df[df['customer'].isin(pilihan_customer)]
-    if pilihan_produk:
-        df = df[df['produk'].isin(pilihan_produk)]
+    df = terapkan_filter(df, start_date, end_date, tuple(pilihan_customer), tuple(pilihan_produk))
     
     # Pesan Asisten
     st.chat_message("assistant").write(
@@ -619,8 +651,8 @@ if uploaded_file:
         st.success("Tidak ada lonjakan melebihi ambang pada periode yang dipilih.")
         st.caption("Mantap! Pola transaksi masih stabil pada periode ini.")
 
-    st.session_state.filtered_df = df.copy()
-    st.session_state.warning_df = df_warning.copy()
+    st.session_state.filtered_df = df
+    st.session_state.warning_df = df_warning
     st.session_state.filter_info = buat_ringkasan_filter(df, pilihan_customer, pilihan_produk)
     st.session_state.faktor_warning = faktor_warning
 

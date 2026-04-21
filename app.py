@@ -77,10 +77,33 @@ st.markdown(
         margin-bottom: 0.5rem;
     }
     [data-testid="stChatMessage"] {
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid #dbeafe;
-        border-radius: 12px;
-        padding: 0.2rem 0.4rem;
+        background: transparent;
+        border: none;
+        padding: 0.1rem 0;
+    }
+    .assistant-bubble {
+        background: #eef6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 14px;
+        padding: 0.65rem 0.8rem;
+        color: #0f172a;
+    }
+    .user-bubble {
+        background: linear-gradient(120deg, #2563eb, #0ea5e9);
+        border: 1px solid #1d4ed8;
+        border-radius: 14px;
+        padding: 0.65rem 0.8rem;
+        color: #ffffff;
+    }
+    .chat-toolbar {
+        display: inline-block;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.82rem;
+        color: #334155;
+        margin-bottom: 0.4rem;
     }
     </style>
     """,
@@ -562,11 +585,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown('<div class="quick-hint">⚡ Pertanyaan cepat (klik):</div>', unsafe_allow_html=True)
+st.markdown('<div class="chat-toolbar">Tips: gunakan nama produk/customer agar jawaban makin presisi.</div>', unsafe_allow_html=True)
 
 if "pending_prompt" not in st.session_state:
     st.session_state.pending_prompt = None
 
-q1, q2, q3, q4 = st.columns(4)
+q1, q2, q3, q4, q5 = st.columns(5)
 if q1.button("Ringkasan data", use_container_width=True):
     st.session_state.pending_prompt = "Tolong beri ringkasan data saat ini"
 if q2.button("Top 5 produk", use_container_width=True):
@@ -575,6 +599,12 @@ if q3.button("Top customer", use_container_width=True):
     st.session_state.pending_prompt = "Top customer berdasarkan volume"
 if q4.button("Cek lonjakan", use_container_width=True):
     st.session_state.pending_prompt = "Ada warning lonjakan apa saja?"
+if q5.button("🧹 Clear Chat", use_container_width=True):
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Chat dibersihkan. Siap analisa lagi dari data terfilter terbaru."}
+    ]
+    st.session_state.pending_prompt = None
+    st.rerun()
 
 # Inisialisasi riwayat chat agar tidak hilang saat rerun
 if "messages" not in st.session_state:
@@ -586,7 +616,8 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     avatar = "🤖" if message["role"] == "assistant" else "👤"
     with st.chat_message(message["role"], avatar=avatar):
-        st.markdown(message["content"])
+        bubble_class = "assistant-bubble" if message["role"] == "assistant" else "user-bubble"
+        st.markdown(f'<div class="{bubble_class}">{message["content"]}</div>', unsafe_allow_html=True)
 
 # Input Chat dari User
 typed_prompt = st.chat_input("Ketik pertanyaan analisa Anda di sini...")
@@ -596,17 +627,18 @@ if prompt:
     # Simpan pesan user
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
-        st.markdown(prompt)
+        st.markdown(f'<div class="user-bubble">{prompt}</div>', unsafe_allow_html=True)
 
     # Logika Jawaban Asisten berbasis data terfilter aktif
     with st.chat_message("assistant", avatar="🤖"):
-        response = jawab_pertanyaan_data(
-            prompt=prompt,
-            df_filter=st.session_state.get("filtered_df"),
-            df_warning=st.session_state.get("warning_df"),
-            faktor_warning=st.session_state.get("faktor_warning", 1.0),
-            filter_info=st.session_state.get("filter_info", "Filter belum aktif.")
-        )
+        with st.spinner("Sedang menganalisa data terfilter..."):
+            response = jawab_pertanyaan_data(
+                prompt=prompt,
+                df_filter=st.session_state.get("filtered_df"),
+                df_warning=st.session_state.get("warning_df"),
+                faktor_warning=st.session_state.get("faktor_warning", 1.0),
+                filter_info=st.session_state.get("filter_info", "Filter belum aktif.")
+            )
         
-        st.markdown(response)
+        st.markdown(f'<div class="assistant-bubble">{response}</div>', unsafe_allow_html=True)
         st.session_state.messages.append({"role": "assistant", "content": response})

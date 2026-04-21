@@ -237,40 +237,71 @@ async function tanyaAI() {
     const historyBox = document.getElementById('chat-history');
     const userMessage = inputField.value.trim();
 
+    // Validasi: Jangan jalan jika pesan kosong atau data belum diupload
     if (!userMessage) return;
-
-    // Mengirimkan data yang sudah difilter/diidentifikasi sebagai lonjakan
-const dataAnomali = dataAsli
-    .filter(d => d.statusLonjakan === "⚠️ Lonjakan") // Mengambil baris yang sudah ditandai sistem kita
-    .slice(0, 5); // Ambil 5 teratas agar tidak kepanjangan
-
-const ringkasanAnomali = dataAnomali.length > 0 ? 
-    dataAnomali.map(d => `${d.namaCustomer} beli ${d.namaProduk} sebanyak ${d.qty}`).join("; ") : 
-    "Tidak ada lonjakan signifikan terdeteksi.";
-
-    // --- LOGIKA TOKEN AMAN ---
-    let activeToken = localStorage.getItem('pbf_dashboard_token');
-
-    if (!activeToken) {
-        activeToken = prompt("Keamanan: Masukkan GitHub Token Anda untuk mengaktifkan AI (Hanya perlu sekali per perangkat):");
-        if (activeToken && activeToken.startsWith('ghp_')) {
-            localStorage.setItem('pbf_dashboard_token', activeToken);
-        } else {
-            alert("Token tidak valid. Pastikan diawali dengan 'ghp_'.");
-            return;
-        }
+    if (dataAsli.length === 0) {
+        alert("Mohon upload dan proses file Excel terlebih dahulu, Pak.");
+        return;
     }
 
-    // 1. Tampilkan pesan user (Bubble Style)
+    // 1. Logika Keamanan Token
+    let activeToken = localStorage.getItem('pbf_dashboard_token');
+    if (!activeToken) {
+        activeToken = prompt("Masukkan GitHub Token Anda:");
+        if (activeToken) localStorage.setItem('pbf_dashboard_token', activeToken);
+        else return;
+    }
+
+    // Tampilkan pesan user di UI
     const userBubble = document.createElement('div');
     userBubble.className = "message user-msg";
     userBubble.textContent = userMessage;
     historyBox.appendChild(userBubble);
-    
-    inputField.value = ""; 
+    inputField.value = "";
     historyBox.scrollTop = historyBox.scrollHeight;
 
-    // 2. Tambahkan Loading Indicator
+    // 2. PROSES DATA AGREGAT (Perbaikan Logika)
+    const rekapProduk = {};
+    const rekapCustomer = {};
+    
+    dataAsli.forEach(item => {
+        // Mencari kolom kuantitas secara fleksibel
+        const qtyRaw = item["Total Volume"] || item["Jumlah Orderan"] || item.jumlah || item.QTY || 0;
+        const qty = typeof qtyRaw === 'string' ? Number(qtyRaw.replace(/[^0-9.-]+/g,"")) : Number(qtyRaw);
+
+        // Mencari nama produk dan customer secara fleksibel
+        const namaProduk = item["nama produk"] || item["NAMA BARANG"] || item["Produk"] || item.namaProduk || "Produk";
+        const namaCustomer = item["nama customer"] || item["PELANGGAN"] || item["Outlet"] || item.namaCustomer || "Customer";
+
+        if (qty > 0) {
+            rekapProduk[namaProduk] = (rekapProduk[namaProduk] || 0) + qty;
+            rekapCustomer[namaCustomer] = (rekapCustomer[namaCustomer] || 0) + qty;
+        }
+    });
+
+    // Ringkas data untuk dikirim ke AI (Batasi agar tidak terlalu panjang)
+    const teksProduk = Object.entries(rekapProduk).map(([k, v]) => `${k} (${v} qty)`).join(", ");
+    const teksCustomer = Object.entries(rekapCustomer).map(([k, v]) => `${k} (${v} qty)`).join(", ");
+
+    // 3. SYSTEM PROMPT
+    const systemPrompt = `
+    Anda adalah "PBF Expert Assistant". Anda wajib menjawab berdasarkan data statistik di bawah ini.
+    
+    DATA SAAT INI:
+    - Total Baris: ${dataAsli.length}
+    - Penjualan Produk: ${teksProduk.slice(0, 1800)}
+    - Pembelian Customer: ${teksCustomer.slice(0, 1000)}
+
+    ATURAN:
+    1. Jawab hanya terkait PBF, CDOB, atau dashboard ini.
+    2. Jika di luar konteks, tolak dengan sopan.
+    3. Analisis lonjakan jika ada Qty yang tidak wajar.
+    4. Gunakan istilah: APJ, PBF, CDOB, Prekursor, Psikotropika, dan SP.
+    5. Jawab langsung dengan angka, jangan suruh user lihat tabel.
+    
+    [Di akhir jawaban, berikan 1 saran pertanyaan relevan dalam kurung siku].`;
+
+    // Tampilkan Loading
     const loadingDiv = document.createElement('div');
     loadingDiv.id = "loading-ai";
     loadingDiv.className = "message bot-msg";
@@ -278,49 +309,12 @@ const ringkasanAnomali = dataAnomali.length > 0 ?
     historyBox.appendChild(loadingDiv);
     historyBox.scrollTop = historyBox.scrollHeight;
 
-    // 3. Siapkan Ringkasan Data
-    const ringkasan = dataAsli.length > 0 ? 
-        dataAsli.slice(0, 10).map(d => `${d.namaCustomer}: ${d.namaProduk}`).join(", ") : 
-        "Belum ada data.";
-
-     // Hitung statistik ringkas sebelum panggil AI
-const totalTransaksi = dataAsli.length;
-const totalQty = dataAsli.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
-const topCustomer = dataAsli.length > 0 ? dataAsli[0].namaCustomer : "-";
-
-const systemPrompt = `
-    Anda adalah "PBF Expert Assistant". Tugas Anda membantu Apoteker Penanggung Jawab (APJ) menganalisis data distribusi farmasi.
-    
-     LOGIKA ANALISIS ANOMALI:
-    1. Deteksi Lonjakan: Jika ada satu pelanggan membeli produk > 2x lipat dari rata-rata kuantitas biasanya, tandai sebagai "Potensi Penyimpangan".
-    2. Konsentrasi Pelanggan: Jika > 50% volume satu jenis obat hanya diserap oleh 1 pelanggan, berikan peringatan risiko ketergantungan distribusi.
-    3. Fokus Pengawasan: Berikan perhatian khusus pada nama produk yang mengandung kata kunci (e.g., "Pseudoephedrine", "Dextro", "Diazepam", "Tramadol").
-    4. Jika menemukan data anomali, sampaikan dengan format: 
-       - ⚠️ TEMUAN: [Nama Pelanggan] - [Produk]
-       - Analisis: [Kenapa ini aneh?]
-       - Rekomendasi APJ: [Tindakan yang harus diambil sesuai CDOB]
-
-    KONTEKS DASHBOARD SAAT INI:
-    - Total Baris Data: ${totalTransaksi}
-    - Total Volume (Qty): ${totalQty}
-    - Customer Teratas: ${topCustomer}
-    - Sampel Data (10 teratas): ${ringkasan}
-
-    ATURAN KETAT:
-    1. HANYA jawab pertanyaan terkait data PBF, regulasi farmasi (CDOB), atau cara pakai dashboard ini.
-    2. Jika user bertanya di luar konteks (misal: masak, politik, hiburan), jawab: "Maaf Pak, saya fokus membantu Bapak mengawasi distribusi di PBF ini."
-    3. Analisis Anomali: Jika ada lonjakan Qty yang tidak wajar, beri peringatan berdasarkan data.
-    4. Gunakan istilah teknis seperti: APJ, PBF, CDOB, Prekursor, Psikotropika, dan Surat Pesanan (SP).
-    [Di akhir setiap jawaban, berikan 1 saran pertanyaan singkat yang relevan untuk dianalisis selanjutnya]
-
-`;
-
     try {
         const response = await fetch("https://models.inference.ai.azure.com/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${activeToken}` // Menggunakan token dari localStorage
+                "Authorization": `Bearer ${activeToken}`
             },
             body: JSON.stringify({
                 messages: [
@@ -331,37 +325,26 @@ const systemPrompt = `
             })
         });
 
-        // Jika token salah atau sudah dihapus oleh GitHub (401)
         if (response.status === 401) {
-            localStorage.removeItem('pbf_dashboard_token'); // Hapus token rusak dari memori
-            throw new Error("Token tidak valid atau telah kedaluwarsa.");
+            localStorage.removeItem('pbf_dashboard_token');
+            throw new Error("Token tidak valid/expired.");
         }
-
-        if (!response.ok) throw new Error("Gagal menghubungi AI.");
 
         const data = await response.json();
         const aiReply = data.choices[0].message.content;
 
         document.getElementById('loading-ai').remove();
-        
         const botBubble = document.createElement('div');
         botBubble.className = "message bot-msg";
-        botBubble.textContent = aiReply;
+        botBubble.innerHTML = aiReply.replace(/\n/g, "<br>");
         historyBox.appendChild(botBubble);
-        
         historyBox.scrollTop = historyBox.scrollHeight;
 
     } catch (error) {
         if(document.getElementById('loading-ai')) document.getElementById('loading-ai').remove();
-        const errorDiv = document.createElement('div');
-        errorDiv.className = "message bot-msg";
-        errorDiv.style.color = "#c0392b";
-        errorDiv.textContent = `Error: ${error.message}. Silakan refresh halaman untuk mencoba lagi atau masukkan token baru.`;
-        historyBox.appendChild(errorDiv);
-        historyBox.scrollTop = historyBox.scrollHeight;
+        alert("Kesalahan AI: " + error.message);
     }
 }
-
 // Inisialisasi Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     const widget = document.getElementById('ai-widget');

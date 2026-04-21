@@ -4,9 +4,10 @@ import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from datetime import datetime, timedelta, timezone
 
 # --- 1. KONFIGURASI & CSS ---
-st.set_page_config(page_title="PBF Monitoring", layout="wide")
+st.set_page_config(page_title="Dashboard PBF", layout="wide")
 
 try:
     with open("style.css") as f:
@@ -104,6 +105,41 @@ st.markdown(
         font-size: 0.82rem;
         color: #334155;
         margin-bottom: 0.4rem;
+    }
+    .sidebar-hero {
+        background: linear-gradient(135deg, #0ea5e9, #2563eb);
+        color: #ffffff;
+        border-radius: 14px;
+        padding: 0.8rem 0.9rem;
+        margin-bottom: 0.7rem;
+        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.2);
+    }
+    .sidebar-hero h4 {
+        margin: 0 0 0.2rem 0;
+        font-size: 1.0rem;
+    }
+    .sidebar-hero p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 0.84rem;
+    }
+    .sidebar-time {
+        background: #f1f5f9;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 0.45rem 0.6rem;
+        margin-bottom: 0.6rem;
+        font-size: 0.82rem;
+    }
+    .sidebar-note {
+        background: #ecfeff;
+        color: #0e7490;
+        border: 1px solid #a5f3fc;
+        border-radius: 10px;
+        padding: 0.45rem 0.6rem;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
     }
     </style>
     """,
@@ -365,8 +401,8 @@ def jawab_pertanyaan_data(prompt, df_filter, df_warning, faktor_warning, filter_
 
 # --- 3. UI DASHBOARD ---
 
-st.title("🏥 Dashboard Monitoring PBF 2026")
-st.markdown("Pemantauan Real-time Prekursor, Psikotropika, & OOT")
+st.title("🏥 Dashboard Pedagang Besar Farmasi (PBF)")
+st.markdown("Monitoring Transaksi Produk Secara Komprehensif  ")
 st.markdown(
     """
     <div class="hero-box">
@@ -378,15 +414,34 @@ st.markdown(
 )
 
 with st.sidebar:
+    wib_now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=7)))
+    st.markdown(
+        """
+        <div class="sidebar-hero">
+          <h4>🎛️ Panel Kontrol</h4>
+          <p>Atur data, warning, dan ekspor dengan cepat.</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        f'<div class="sidebar-time">🕒 WIB (GMT+7): <b>{wib_now.strftime("%d %b %Y, %H:%M:%S")}</b></div>',
+        unsafe_allow_html=True
+    )
     st.header("Input Data")
     uploaded_file = st.file_uploader("Pilih File Excel", type=["xlsx", "xls"])
-    faktor_warning = st.slider(
-        "Ambang Early Warning",
-        min_value=1.0,
-        max_value=2.0,
-        value=1.0,
-        step=0.1,
-        help="1.0 = warning jika melebihi rata-rata 3 bulan, 1.2 = >120% dari rata-rata."
+    skala_warning = st.select_slider(
+        "Skala Early Warning",
+        options=[1, 2, 3, 4, 5],
+        value=3,
+        help="Skala 1 paling sensitif, skala 5 paling ketat."
+    )
+    faktor_warning_map = {1: 1.00, 2: 1.10, 3: 1.25, 4: 1.40, 5: 1.60}
+    faktor_warning = faktor_warning_map[skala_warning]
+    st.caption(f"Ambang aktif: {faktor_warning:.2f}x dari rata-rata 3 bulan terakhir.")
+    st.markdown(
+        '<div class="sidebar-note">Tip: gunakan skala 1-2 untuk deteksi awal yang agresif, skala 4-5 untuk warning prioritas tinggi.</div>',
+        unsafe_allow_html=True
     )
     
     try:
